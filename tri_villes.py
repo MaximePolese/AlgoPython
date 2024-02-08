@@ -162,7 +162,7 @@ def mergesort(listVille):
         mergesort(list_end)
         i = j = k = 0
         while i < len(list_begin) and j < len(list_end):
-            if list_begin[i] < list_end[j]:
+            if list_begin[i].distanceFromGrenoble < list_end[j].distanceFromGrenoble:
                 listVille[k] = list_begin[i]
                 i += 1
             else:
@@ -211,13 +211,13 @@ canvas = Canvas(fenetre, width=width + 2 * offset,
                 height=height + 2 * offset, bg='white')
 buttonValidation = Button(command=sort)
 
-listVille = Listbox(fenetre, width=20, height=len(listTri), selectmode="single")
-listVille.place(x=offset, y=offset)
-listVille.bind("<<ListboxSelect>>", onSelectTypeTri)
+list = Listbox(fenetre, width=20, height=len(listTri), selectmode="single")
+list.place(x=offset, y=offset)
+list.bind("<<ListboxSelect>>", onSelectTypeTri)
 
 for typeTri in range(len(listTri)):
-    listVille.insert(END, listTri[typeTri])
-    listVille.itemconfig(typeTri, fg="black")
+    list.insert(END, listTri[typeTri])
+    list.itemconfig(typeTri, fg="black")
 
 buttonFile = Button(
     fenetre, text="Importation du fichier", command=loadFile)
