@@ -1,3 +1,4 @@
+import time
 from tkinter import *
 from tkinter import filedialog
 import csv
@@ -78,6 +79,7 @@ def sort():
     # effacement de la liste affichée
     listVilleSortedBox.delete(0, END)
     listVilleSorted = listVille.copy()
+    start_time = time.time()
 
     if typeTriSelection == "Tri par insertion":
         listVilleSorted = insertsort(listVilleSorted)
@@ -92,8 +94,9 @@ def sort():
     elif typeTriSelection == "Tri par tas":
         listVilleSorted = heapsort(listVilleSorted)
     elif typeTriSelection == "Tri rapide":
-        listVilleSorted = quicksort(listVilleSorted)
+        listVilleSorted = quicksort(listVilleSorted, 0, len(listVilleSorted) - 1)
 
+    end_time = time.time()
     for ville in range(len(listVilleSorted)):
         listVilleSortedBox.insert(END, listVilleSorted[ville].nom_commune + " - " + str(
             listVilleSorted[ville].distanceFromGrenoble))
@@ -101,6 +104,7 @@ def sort():
 
     listVilleSortedBox.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=listVilleSortedBox.yview)
+    print(typeTriSelection + ", temps d'éxécution : ", (end_time - start_time))
 
 
 def insertsort(listVille):
@@ -180,12 +184,26 @@ def mergesort(listVille):
     return listVille
 
 
-def heapsort(listVille):
-    print("implement me !")
+def quicksort(listVille, first, last):
+    if first < last:
+        pivot = partition(listVille, first, last)
+        quicksort(listVille, first, pivot - 1)
+        quicksort(listVille, pivot + 1, last)
     return listVille
 
 
-def quicksort(listVille):
+def partition(listVille, first, last):
+    pivot = last
+    j = first
+    for i in range(first, last):
+        if listVille[i].distanceFromGrenoble <= listVille[pivot].distanceFromGrenoble:
+            swap(listVille, i, j)
+            j += 1
+    swap(listVille, last, j)
+    return j
+
+
+def heapsort(listVille):
     print("implement me !")
     return listVille
 

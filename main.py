@@ -99,7 +99,27 @@ def tri_merge(list):
             list[k] = list_end[j]
             j += 1
             k += 1
+    # print(list)
     return list
+
+
+def tri_quick(list, first, last):
+    if first < last:
+        pivot = partition(list, first, last)
+        tri_quick(list, first, pivot - 1)
+        tri_quick(list, pivot + 1, last)
+    return list
+
+
+def partition(list, first, last):
+    pivot = last
+    mur = first
+    for i in range(first, last):
+        if list[i] <= list[pivot]:
+            swap(list, i, mur)
+            mur += 1
+    swap(list, last, mur)
+    return mur
 
 
 def chrono(tri, list):
@@ -118,3 +138,11 @@ chrono(tri_shell, list1.copy())
 
 print("tri_merge", list1.copy())
 chrono(tri_merge, list1.copy())
+
+list2 = list1.copy()
+print("tri_quick", list2)
+start_time = time.time()
+tri_quick(list2, 0, len(list2) - 1)
+end_time = time.time()
+print("Temps d'éxécution : ", (end_time - start_time))
+print("Liste triée : ", list2)
