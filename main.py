@@ -12,7 +12,7 @@ def swap(list, i, j):
 def tri_selection(list):
     count = 0
     print("\033[1;32mtri_selection", list)
-    for i in range(0, len(list)):
+    for i in range(0, len(list) - 1):
         index_min = i
         for j in range(i + 1, len(list)):
             if list[j] < list[index_min]:
