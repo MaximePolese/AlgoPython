@@ -11,7 +11,7 @@ def swap(list, i, j):
 
 def tri_selection(list):
     count = 0
-    print("\033[1;33mtri_selection", list)
+    print("\033[1;32mtri_selection", list)
     for i in range(0, len(list)):
         index_min = i
         for j in range(i + 1, len(list)):
@@ -121,7 +121,6 @@ def redescendre(list, finArbre, index, cpt):
 def tri_merge(list, aff=False):
     if aff:
         print("tri_merge", list)
-    # cpt = 0
     if len(list) > 1:
         half_list = len(list) // 2
         list_begin = list[0: half_list]
@@ -145,7 +144,6 @@ def tri_merge(list, aff=False):
             list[k] = list_end[j]
             j += 1
             k += 1
-    # print("Compteur : ", cpt)
     return list
 
 
