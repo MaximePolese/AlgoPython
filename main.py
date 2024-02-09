@@ -75,7 +75,53 @@ def tri_shell(list):
     return list
 
 
-def tri_merge(list):
+def tri_heap(list, aff=False):
+    if aff:
+        print("tri_heap", list)
+    cpt = 0
+    for i in range(1, len(list) - 1):
+        cpt = remonter(list, i, cpt + 1)
+
+    for i in range(len(list) - 1, -1, -1):
+        swap(list, 0, i)
+        cpt = redescendre(list, i, 0, cpt + 1)
+    print("Compteur : ", cpt)
+    return list
+
+
+def remonter(list, index, cpt):
+    parent = 0
+    if index % 2 == 1:
+        parent = (index - 1) // 2
+    else:
+        parent = (index - 2) // 2
+
+    if parent >= 0 and list[index] > list[parent]:
+        swap(list, index, parent)
+        cpt = remonter(list, parent, cpt + 1)
+    return cpt
+
+
+def redescendre(list, finArbre, index, cpt):
+    enfant1 = 2 * index + 1
+    if enfant1 < finArbre:
+        enfant2 = 2 * index + 2
+        max = 0
+        if enfant2 >= finArbre or list[enfant1] > list[enfant2]:
+            max = enfant1
+        else:
+            max = enfant2
+        cpt += 1
+        if list[max] > list[index]:
+            swap(list, index, max)
+            cpt = redescendre(list, finArbre, max, cpt + 1)
+    return cpt
+
+
+def tri_merge(list, aff=False):
+    if aff:
+        print("tri_merge", list)
+    # cpt = 0
     if len(list) > 1:
         half_list = len(list) // 2
         list_begin = list[0: half_list]
@@ -99,15 +145,18 @@ def tri_merge(list):
             list[k] = list_end[j]
             j += 1
             k += 1
-    # print(list)
+    # print("Compteur : ", cpt)
     return list
 
 
-def tri_quick(list, first, last):
+def tri_quick(list, aff=False, first=0, last=0):
+    if aff:
+        print("tri_quick", list)
+        last = len(list) - 1
     if first < last:
         pivot = partition(list, first, last)
-        tri_quick(list, first, pivot - 1)
-        tri_quick(list, pivot + 1, last)
+        tri_quick(list, False, first, pivot - 1)
+        tri_quick(list, False, pivot + 1, last)
     return list
 
 
@@ -122,9 +171,12 @@ def partition(list, first, last):
     return mur
 
 
-def chrono(tri, list):
+def chrono(tri, list, aff=False):
     start_time = time.time()
-    mon_tri = tri(list)
+    if aff:
+        mon_tri = tri(list, aff)
+    else:
+        mon_tri = tri(list)
     end_time = time.time()
     print("Temps d'éxécution : ", (end_time - start_time))
     print("Liste triée : ", mon_tri)
@@ -135,14 +187,6 @@ chrono(tri_selection, list1.copy())
 chrono(tri_bulle, list1.copy())
 chrono(tri_insertion, list1.copy())
 chrono(tri_shell, list1.copy())
-
-print("tri_merge", list1.copy())
-chrono(tri_merge, list1.copy())
-
-list2 = list1.copy()
-print("tri_quick", list2)
-start_time = time.time()
-tri_quick(list2, 0, len(list2) - 1)
-end_time = time.time()
-print("Temps d'éxécution : ", (end_time - start_time))
-print("Liste triée : ", list2)
+chrono(tri_heap, list1.copy(), True)
+chrono(tri_merge, list1.copy(), True)
+chrono(tri_quick, list1.copy(), True)
