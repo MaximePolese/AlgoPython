@@ -204,8 +204,38 @@ def partition(listVille, first, last):
 
 
 def heapsort(listVille):
-    print("implement me !")
+    for i in range(1, len(listVille) - 1):
+        remonter(listVille, i)
+    for i in range(len(listVille) - 1, -1, -1):
+        swap(listVille, 0, i)
+        redescendre(listVille, i, 0)
     return listVille
+
+
+def remonter(listVille, index):
+    parent = 0
+    if index % 2 == 1:
+        parent = (index - 1) // 2
+    else:
+        parent = (index - 2) // 2
+
+    if parent >= 0 and listVille[index].distanceFromGrenoble > listVille[parent].distanceFromGrenoble:
+        swap(listVille, index, parent)
+        remonter(listVille, parent)
+
+
+def redescendre(listVille, finArbre, index):
+    enfant1 = 2 * index + 1
+    if enfant1 < finArbre:
+        enfant2 = 2 * index + 2
+        max = 0
+        if enfant2 >= finArbre or listVille[enfant1].distanceFromGrenoble > listVille[enfant2].distanceFromGrenoble:
+            max = enfant1
+        else:
+            max = enfant2
+        if listVille[max].distanceFromGrenoble > listVille[index].distanceFromGrenoble:
+            swap(listVille, index, max)
+            redescendre(listVille, finArbre, max)
 
 
 # Creation de la fenêtre
