@@ -29,6 +29,28 @@ all_points = [
 ]
 
 
+# def loadFile():
+#     listVille.clear()
+#     filename = filedialog.askopenfilename(initialdir="./",
+#                                           title="Selection du Fichier",
+#                                           filetypes=(("Text files",
+#                                                       "*.csv*"),
+#                                                      ("all files",
+#                                                       "*.*")))
+#     changeLabelFile("Fichier : " + filename)
+#     with open(filename, 'r', encoding='UTF-8') as file:
+#         csvreader = csv.reader(file)
+#         next(csvreader)  # skip header line
+#         for row in csvreader:
+#             data = row[0].split(";")
+#             try:
+#                 ville = Ville(data[8], data[9], float(data[11]), float(data[12]), float(data[13]), 0)
+#                 ville.distanceFromGrenoble = getDistanceFromGrenoble(ville)
+#                 listVille.append(ville)
+#             except:
+#                 continue
+
+
 def calc_distance_between_two_points(pointA, pointB, all_points):
     loc1 = (all_points[pointA][0], all_points[pointA][1])
     loc2 = (all_points[pointB][0], all_points[pointB][1])
@@ -77,20 +99,50 @@ def find_shortest_path(start_point):
 
 
 find_shortest_path(0)
-print(path)
+print("Résultat du plus proche voisin :", path)
 
 
-def dist_total(path):
+def calc_dist_total(path):
     total = 0
     for i in range(0, len(path) - 1):
         total = total + distances[path[i]][path[i + 1]]
     return total
 
 
-total = dist_total(path)
-print("La distance est égale à : ", total, " Km")
+total = calc_dist_total(path)
+print("La distance est égale à :", total, "Km")
 
-m = folium.Map([45.18486504179179, 5.731181509376984], zoom_start=13)
+
+# Algo 2-opt
+def swap(list, i, j):
+    list[i], list[j] = list[j], list[i]
+
+
+def gain(path, i, j):
+    if i < j:
+        gain = distances[path[i]][path[j + 1]] + distances[path[(i + len(path) - 1) % len(path)]][path[j]] - \
+               distances[path[(i + len(path) - 1) % len(path)]][path[i]] - distances[path[j]][path[(j + 1) % len(path)]]
+    return gain
+
+
+def algo_opt(path):
+    for i in range(1, len(path)):
+        for j in range(i + 1, len(path) - 1):
+            swap(path, i, j)
+            if gain(path, i, j) < 0:
+                swap(path, i, j)
+    return path
+
+
+path2opt = path.copy()
+algo_opt(path2opt)
+print("Résultat 2-opt :", path2opt)
+total = calc_dist_total(path2opt)
+print("La distance est égale à :", total, "Km")
+
+# Affichage
+m = folium.Map([45.18486504179179, 5.731181509376984], zoom_start=14)
+
 folium.Marker(
     location=[45.18486504179179, 5.731181509376984],
     tooltip="Le Campus Numérique",
@@ -111,16 +163,19 @@ def display_points(all_points):
 display_points(all_points)
 
 path_coords = []
+path2opt_coords = []
 
 
-def display_path(path):
+def display_path(path, path_coords):
     for i in range(0, len(path)):
         path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
 
 
-display_path(path)
+display_path(path, path_coords)
 # print(path_coords)
+folium.PolyLine(path_coords, color="red", tooltip="shortest_path").add_to(m)
 
-folium.PolyLine(path_coords, tooltip="shortest_path").add_to(m)
+display_path(path2opt, path2opt_coords)
+folium.PolyLine(path2opt_coords, color="orange", tooltip="shortest_path").add_to(m)
 
 m.save("index.html")
