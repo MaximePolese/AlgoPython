@@ -59,14 +59,12 @@ visited = [False] * len(all_points)
 def find_next_move(last_point):
     shortest_way = 1000
     next_index = 1000
-    dist_total = 0
     for i in range(0, len(all_points)):
         if distances[last_point][i] > 0 and not visited[i]:
             if distances[last_point][i] < shortest_way:
                 shortest_way = distances[last_point][i]
                 next_index = i
     visited[last_point] = True
-    dist_total += shortest_way
     path.append(next_index)
     return next_index
 
@@ -80,6 +78,17 @@ def find_shortest_path(start_point):
 
 find_shortest_path(0)
 print(path)
+
+
+def dist_total(path):
+    total = 0
+    for i in range(0, len(path) - 1):
+        total = total + distances[path[i]][path[i + 1]]
+    return total
+
+
+total = dist_total(path)
+print("La distance est égale à : ", total, " Km")
 
 m = folium.Map([45.18486504179179, 5.731181509376984], zoom_start=13)
 folium.Marker(
@@ -110,7 +119,7 @@ def display_path(path):
 
 
 display_path(path)
-print(path_coords)
+# print(path_coords)
 
 folium.PolyLine(path_coords, tooltip="shortest_path").add_to(m)
 
