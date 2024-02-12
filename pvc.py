@@ -1,5 +1,6 @@
 import haversine as hs
 import numpy as np
+import folium
 
 allPoints = [
     [45.171112, 5.695952],
@@ -48,15 +49,28 @@ a = np.array([[1], [5], [9]])
 print(a[1][0])
 
 
+# def calc_all_distances(allPoints):
+#     distances = np.array([[0], [1]])
+#     for i in range(0, len(allPoints)):
+#         # distances[i] = []
+#         for j in range(i, len(allPoints)):
+#             if i == j:
+#                 distances[[i], [j]] = 0
+#             else:
+#                 distances[[i], [j]] = calc_distance(i, j, allPoints)
+#             print(f"La distance entre les points {i} et {j} est égale à {distances[i][j]} km")
+
 def calc_all_distances(allPoints):
-    distances = np.array([[0], [1]])
     for i in range(0, len(allPoints)):
-        # distances[i] = []
         for j in range(i, len(allPoints)):
             if i == j:
-                distances[i][j] = 0
+                result = 0
             else:
-                distances[i][j] = calc_distance(i, j, allPoints)
-            print(f"La distance entre les points {i} et {j} est égale à {distances[i][j]} km")
+                result = calc_distance(i, j, allPoints)
+                print(f"La distance entre les points {i} et {j} est égale à {result} km")
 
-# calc_all_distances(allPoints)
+
+calc_all_distances(allPoints)
+
+m = folium.Map(location=(45.171112, 5.695952))
+m.save("index.html")
