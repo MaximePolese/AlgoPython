@@ -69,6 +69,10 @@ def calc_distances_between_all_points(all_points):
 
 distances = calc_distances_between_all_points(all_points)
 
+original_path = []
+for i in range(len(all_points)):
+    original_path.append(i)
+
 # Algo Plus proche voisin______________________________________________________
 path = []
 visited = [False] * len(all_points)
@@ -138,11 +142,37 @@ def algo_opt(path):
     return path
 
 
-path2opt = path.copy()
-algo_opt(path2opt)
+path2opt = algo_opt(path.copy())
 print("Résultat 2-opt :", path2opt)
 total2 = calc_dist_total(path2opt)
 print("La distance est égale à :", total2, "Km")
+
+
+# Algo Glouton________________________________________________________________________
+def algo_glouton(start_point, path):
+    result = []
+    result.insert(0, path.pop(start_point))
+    while len(path) > 0:
+        new_point = path.pop()
+        temp = result[:]
+        result.append(new_point)
+        for j in range(1, len(result)):
+            temp.insert(j, new_point)
+            if calc_dist_total(temp) < calc_dist_total(result):
+                result = temp[:]
+            temp.pop(j)
+    return result
+
+
+path_glouton = algo_glouton(0, original_path.copy())
+print("Résultat Glouton :", path_glouton)
+total3 = calc_dist_total(path_glouton)
+print("La distance est égale à :", total3, "Km")
+
+path_glouton_2opt = algo_opt(path_glouton.copy())
+print("Résultat 2-opt + glouton :", path_glouton_2opt)
+total4 = calc_dist_total(path_glouton_2opt)
+print("La distance est égale à :", total4, "Km")
 
 
 # Algo Génétique______________________________________________________________________
@@ -151,10 +181,22 @@ def trajet(path):
         find_shortest_path(i)
 
 
-# Algo Glouton________________________________________________________________________
+# Pour nombre_d'itérations
+#         Parent A = Sélection_d'un_Individu (Groupe)
+#         Parent B = Sélection_d'un_Individu (Groupe)
+#         Fils =  Recombinaison (Parent A, Parent B)
+#         Si hasard > pourcentage Alors
+#                 Appliquer_une_mutation_à Fils
+#         FinSi
+#         Optimiser Fils  // Optionnel
+#         Evaluer Fils
+#         Si Fils est_accepté_dans Groupe Alors
+#                 Réinsérer Fils dans Groupe
+#         FinSi
+# FinPour
 
 
-# Algo Fourmie________________________________________________________________________
+# Algo Fourmis________________________________________________________________________
 
 
 # Affichage___________________________________________________________________________
@@ -179,20 +221,17 @@ def display_points(all_points):
 
 display_points(all_points)
 
-path_coords = []
-path2opt_coords = []
 
-
-def display_path(path, coords_table):
+def path_coordinates(path):
+    path_coords = []
     for i in range(0, len(path)):
-        coords_table.append([all_points[path[i]][0], all_points[path[i]][1]])
+        path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
+    return path_coords
 
 
-display_path(path, path_coords)
-# print(path_coords)
-folium.PolyLine(path_coords, color="red", tooltip="shortest_path").add_to(m)
-
-display_path(path2opt, path2opt_coords)
-folium.PolyLine(path2opt_coords, color="orange", tooltip="2opt_path").add_to(m)
+# folium.PolyLine(path_coordinates(path), color="red", tooltip="shortest_path").add_to(m)
+# folium.PolyLine(path_coordinates(path2opt), color="blue", tooltip="2opt_path").add_to(m)
+# folium.PolyLine(path_coordinates(path_glouton), color="green", tooltip="2opt_path").add_to(m)
+folium.PolyLine(path_coordinates(path_glouton_2opt), color="red", tooltip="2opt_path").add_to(m)
 
 m.save("index.html")
