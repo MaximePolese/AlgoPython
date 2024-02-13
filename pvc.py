@@ -94,10 +94,6 @@ def find_shortest_path(start_point):
         next_point = find_next_move(next_point)
 
 
-find_shortest_path(0)
-print("Résultat du plus proche voisin :", path)
-
-
 def calc_dist_total(path):
     total = 0
     for i in range(0, len(path) - 1):
@@ -105,13 +101,18 @@ def calc_dist_total(path):
     return total
 
 
+find_shortest_path(0)
+print("Résultat Plus proche voisin :", path)
 total = calc_dist_total(path)
 print("La distance est égale à :", total, "Km")
 
 
 # Algo 2-opt_____________________________________________________________________________________
-def swap(list, i, j):
-    list[i], list[j] = list[j], list[i]
+def swap(list):
+    temp = []
+    while list:
+        temp.append(list.pop())
+    return temp
 
 
 def gain_reverse(path, i, j):
@@ -128,26 +129,12 @@ def gain_reverse(path, i, j):
     return gain
 
 
-def gain_exchange(path, i, j):
-    if i < j:
-        a = distances[path[(i + len(path) - 1) % len(path)]][path[j]]
-        b = distances[path[j]][path[(i + len(path) + 1) % len(path)]]
-        c = distances[path[(j + len(path) - 1) % len(path)]][path[i]]
-        d = distances[path[i]][path[(j + len(path) + 1) % len(path)]]
-        e = distances[path[(i + len(path) - 1) % len(path)]][path[i]]
-        f = distances[path[i]][path[(i + len(path) + 1) % len(path)]]
-        g = distances[path[(j + len(path) - 1) % len(path)]][path[j]]
-        h = distances[path[j]][path[(j + len(path) + 1) % len(path)]]
-        gain = a + b + c + d - e - f - g - h
-    return gain
-
-
 def algo_opt(path):
     for i in range(1, len(path)):
         for j in range(i + 1, len(path) - 1):
-            swap(path, i, j)
+            path[i:j + 1] = swap(path[i:j + 1])
             if gain_reverse(path, i, j) < 0:
-                swap(path, i, j)
+                path[i:j + 1] = swap(path[i:j + 1])
     return path
 
 
@@ -157,7 +144,11 @@ print("Résultat 2-opt :", path2opt)
 total2 = calc_dist_total(path2opt)
 print("La distance est égale à :", total2, "Km")
 
+
 # Algo Génétique______________________________________________________________________
+def trajet(path):
+    for i in range(0, len(path)):
+        find_shortest_path(i)
 
 
 # Algo Glouton________________________________________________________________________
@@ -173,7 +164,7 @@ folium.Marker(
     location=[45.18486504179179, 5.731181509376984],
     tooltip="Le Campus Numérique",
     # popup="Le Campus Numérique",
-    icon=folium.Icon(color="purple", icon=""),
+    icon=folium.Icon(color="purple", icon="cloud"),
 ).add_to(m)
 
 
