@@ -1,5 +1,6 @@
 import haversine as hs
 import folium
+import csv
 
 all_points = [
     [45.171112, 5.695952],
@@ -29,26 +30,19 @@ all_points = [
 ]
 
 
-# def loadFile():
-#     listVille.clear()
-#     filename = filedialog.askopenfilename(initialdir="./",
-#                                           title="Selection du Fichier",
-#                                           filetypes=(("Text files",
-#                                                       "*.csv*"),
-#                                                      ("all files",
-#                                                       "*.*")))
-#     changeLabelFile("Fichier : " + filename)
-#     with open(filename, 'r', encoding='UTF-8') as file:
-#         csvreader = csv.reader(file)
-#         next(csvreader)  # skip header line
-#         for row in csvreader:
-#             data = row[0].split(";")
-#             try:
-#                 ville = Ville(data[8], data[9], float(data[11]), float(data[12]), float(data[13]), 0)
-#                 ville.distanceFromGrenoble = getDistanceFromGrenoble(ville)
-#                 listVille.append(ville)
-#             except:
-#                 continue
+def loadFile():
+    all_points.clear()
+    with open('Data/70villes.csv') as file:
+        csvreader = csv.reader(file)
+        next(csvreader)  # skip header line
+        for row in csvreader:
+            lat = float(row[0])
+            lon = float(row[1])
+            all_points.append([lat, lon])
+    return all_points
+
+
+# loadFile()
 
 
 def calc_distance_between_two_points(pointA, pointB, all_points):
@@ -74,6 +68,8 @@ def calc_distances_between_all_points(all_points):
 
 
 distances = calc_distances_between_all_points(all_points)
+
+# Algo Plus proche voisin______________________________________________________
 path = []
 visited = [False] * len(all_points)
 
@@ -113,15 +109,36 @@ total = calc_dist_total(path)
 print("La distance est égale à :", total, "Km")
 
 
-# Algo 2-opt
+# Algo 2-opt_____________________________________________________________________________________
 def swap(list, i, j):
     list[i], list[j] = list[j], list[i]
 
 
-def gain(path, i, j):
+def gain_reverse(path, i, j):
     if i < j:
-        gain = distances[path[i]][path[j + 1]] + distances[path[(i + len(path) - 1) % len(path)]][path[j]] - \
-               distances[path[(i + len(path) - 1) % len(path)]][path[i]] - distances[path[j]][path[(j + 1) % len(path)]]
+        # a = distance entre i et i+2
+        a = distances[path[i]][path[j + 1]]
+        # b = distance entre i-1 et i+1
+        b = distances[path[(i + len(path) - 1) % len(path)]][path[j]]
+        # c = distance entre i-1 et i
+        c = distances[path[(i + len(path) - 1) % len(path)]][path[i]]
+        # a = distance entre i+1 et i+2
+        d = distances[path[j]][path[(j + 1) % len(path)]]
+        gain = a + b - c - d
+    return gain
+
+
+def gain_exchange(path, i, j):
+    if i < j:
+        a = distances[path[(i + len(path) - 1) % len(path)]][path[j]]
+        b = distances[path[j]][path[(i + len(path) + 1) % len(path)]]
+        c = distances[path[(j + len(path) - 1) % len(path)]][path[i]]
+        d = distances[path[i]][path[(j + len(path) + 1) % len(path)]]
+        e = distances[path[(i + len(path) - 1) % len(path)]][path[i]]
+        f = distances[path[i]][path[(i + len(path) + 1) % len(path)]]
+        g = distances[path[(j + len(path) - 1) % len(path)]][path[j]]
+        h = distances[path[j]][path[(j + len(path) + 1) % len(path)]]
+        gain = a + b + c + d - e - f - g - h
     return gain
 
 
@@ -129,7 +146,7 @@ def algo_opt(path):
     for i in range(1, len(path)):
         for j in range(i + 1, len(path) - 1):
             swap(path, i, j)
-            if gain(path, i, j) < 0:
+            if gain_reverse(path, i, j) < 0:
                 swap(path, i, j)
     return path
 
@@ -137,10 +154,19 @@ def algo_opt(path):
 path2opt = path.copy()
 algo_opt(path2opt)
 print("Résultat 2-opt :", path2opt)
-total = calc_dist_total(path2opt)
-print("La distance est égale à :", total, "Km")
+total2 = calc_dist_total(path2opt)
+print("La distance est égale à :", total2, "Km")
 
-# Affichage
+# Algo Génétique______________________________________________________________________
+
+
+# Algo Glouton________________________________________________________________________
+
+
+# Algo Fourmie________________________________________________________________________
+
+
+# Affichage___________________________________________________________________________
 m = folium.Map([45.18486504179179, 5.731181509376984], zoom_start=14)
 
 folium.Marker(
@@ -166,9 +192,9 @@ path_coords = []
 path2opt_coords = []
 
 
-def display_path(path, path_coords):
+def display_path(path, coords_table):
     for i in range(0, len(path)):
-        path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
+        coords_table.append([all_points[path[i]][0], all_points[path[i]][1]])
 
 
 display_path(path, path_coords)
@@ -176,6 +202,6 @@ display_path(path, path_coords)
 folium.PolyLine(path_coords, color="red", tooltip="shortest_path").add_to(m)
 
 display_path(path2opt, path2opt_coords)
-folium.PolyLine(path2opt_coords, color="orange", tooltip="shortest_path").add_to(m)
+folium.PolyLine(path2opt_coords, color="orange", tooltip="2opt_path").add_to(m)
 
 m.save("index.html")
