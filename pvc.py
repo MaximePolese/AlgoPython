@@ -43,7 +43,7 @@ def loadFile():
     return all_points
 
 
-# loadFile()
+loadFile()
 
 
 def calc_distance_between_two_points(pointA, pointB, all_points):
