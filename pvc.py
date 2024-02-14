@@ -113,7 +113,7 @@ print("La distance est égale à :", total, "Km")
 
 
 # Algo 2-opt_____________________________________________________________________________________
-def swap(list):
+def reverse(list):
     temp = []
     while list:
         temp.append(list.pop())
@@ -137,9 +137,9 @@ def gain_reverse(path, i, j):
 def algo_opt(path):
     for i in range(1, len(path)):
         for j in range(i + 1, len(path) - 1):
-            path[i:j + 1] = swap(path[i:j + 1])
+            path[i:j + 1] = reverse(path[i:j + 1])
             if gain_reverse(path, i, j) < 0:
-                path[i:j + 1] = swap(path[i:j + 1])
+                path[i:j + 1] = reverse(path[i:j + 1])
     return path
 
 
@@ -181,8 +181,8 @@ def individu():
     groupe = []
     for i in range(0, len(all_points)):
         groupe.append(find_shortest_path(i))
-        print(groupe[i])
-        print(calc_dist_total(groupe[i]))
+        # print(groupe[i])
+        # print(calc_dist_total(groupe[i]))
     return groupe
 
 
@@ -203,12 +203,12 @@ def best_parent(groupe):
 def worst_parent(groupe):
     parents = groupe
     longer_way = 0
-    worst = []
+    worst_index = 0
     for i in range(0, len(parents) - 1):
         if calc_dist_total(parents[i]) > longer_way:
             longer_way = calc_dist_total(parents[i])
-            worst.append(parents[i])
-    return worst
+            worst_index = i
+    return worst_index
 
 
 def crossover(parent_a, parent_b):
@@ -222,21 +222,42 @@ def crossover(parent_a, parent_b):
     return fils
 
 
+def swap(list, i, j):
+    list[i], list[j] = list[j], list[i]
+
+
+# def mutation(fils):
+#     min = 1000
+#     index = 1000
+#     for i in range(len(fils) - 1):
+#         if distances[fils[i]][fils[i + 1]] < min:
+#             min = distances[fils[i]][fils[i + 1]]
+#             index = i
+#     swap(fils, index, index - 1)
+#     return fils
+def mutation(fils):
+    i = random.randint(0, len(fils) - 1)
+    j = random.randint(0, len(fils) - 1)
+    if i == j:
+        j = random.randint(0, len(fils) - 1)
+    swap(fils, i, j)
+    return fils
+
+
 def algo_genetic(groupe):
     new_generation = groupe
     parent_a = best_parent(new_generation)[-1]
     parent_b = best_parent(new_generation)[-2]
-    parent_test = worst_parent(new_generation)[-1]
     print("parent_a", parent_a, calc_dist_total(parent_a))
     print("parent_b", parent_b, calc_dist_total(parent_b))
-    print("parent_test", parent_test, calc_dist_total(parent_test))
     fils = crossover(parent_a, parent_b)
     # if hasard > pourcentage:
-    #     fils_mute = mutation(fils)
-    fils_amelio = algo_opt(fils)
+    fils_mute = mutation(fils)
+    fils_amelio = algo_opt(fils_mute)
     print("fils amélioré", fils_amelio, calc_dist_total(fils_amelio))
-    # new_generation.pop(worst_parent(new_generation)[-1])
     if calc_dist_total(fils_amelio) < calc_dist_total(parent_b):
+        print(worst_parent(new_generation))
+        # new_generation.pop(worst_parent(new_generation))
         new_generation.append(fils_amelio)
         print(new_generation)
         print(len(new_generation))
@@ -245,7 +266,7 @@ def algo_genetic(groupe):
 
 def genetic():
     result = []
-    for i in range(1):
+    for i in range(len(all_points) * len(all_points)):
         result = algo_genetic(algo_genetic(groupe_individu))
     best_result = best_parent(result)[-1]
     print(best_result, calc_dist_total(best_result))
