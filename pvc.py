@@ -4,7 +4,6 @@ import time
 import haversine as hs
 import folium
 import csv
-import timeit
 
 all_points = [
     [45.171112, 5.695952],
@@ -30,7 +29,7 @@ all_points = [
     [45.169851, 5.695723],
     [45.180943, 5.698965],
     [45.176205, 5.692165],
-    [45.171244, 5.689872]
+    [45.171244, 5.689872],
 ]
 
 
@@ -78,6 +77,18 @@ for i in range(len(all_points)):
     original_path.append(i)
 
 
+def calc_dist_total(path):
+    total = 0
+    for i in range(0, len(path) - 1):
+        total = total + distances[path[i]][path[i + 1]]
+    return total
+
+
+def calc_boucle(path):
+    boucle = calc_dist_total(path) + distances[path[0]][path[-1]]
+    return boucle
+
+
 # Algo Plus proche voisin______________________________________________________
 def find_next_move(last_point, visited, path):
     shortest_way = 10000
@@ -92,7 +103,7 @@ def find_next_move(last_point, visited, path):
     return next_index
 
 
-def find_shortest_path(start_point):
+def calc_path(start_point):
     path = []
     visited = [False] * len(all_points)
     path.append(start_point)
@@ -102,16 +113,20 @@ def find_shortest_path(start_point):
     return path
 
 
-def calc_dist_total(path):
-    total = 0
-    for i in range(0, len(path) - 1):
-        total = total + distances[path[i]][path[i + 1]]
-    return total
+def shortest_path():
+    shortest_way = 10000
+    best_path = []
+    for i in range(0, len(all_points) - 1):
+        path = calc_path(i)
+        if calc_dist_total(path) < shortest_way:
+            shortest_way = calc_dist_total(path)
+            best_path.insert(0, path)
+    return best_path[0]
 
 
-path = find_shortest_path(7)
-print("Résultat Plus proche voisin :", path)
-total = calc_dist_total(path)
+path_shortest = shortest_path()
+print("Résultat Plus proche voisin :", path_shortest)
+total = calc_dist_total(path_shortest)
 print("La distance est égale à :", total, "Km")
 
 
@@ -146,8 +161,8 @@ def algo_opt(path):
     return path
 
 
-path2opt = algo_opt(path.copy())
-print("Résultat 2-opt :", path2opt)
+path2opt = algo_opt(path_shortest.copy())
+print("Résultat Plus proche voisin + 2-opt :", path2opt)
 total2 = calc_dist_total(path2opt)
 print("La distance est égale à :", total2, "Km")
 
@@ -162,13 +177,25 @@ def algo_glouton(start_point, path):
         result.append(new_point)
         for j in range(1, len(result)):
             temp.insert(j, new_point)
-            if calc_dist_total(temp) < calc_dist_total(result):
+            if calc_boucle(temp) < calc_boucle(result):
                 result = temp[:]
             temp.pop(j)
+    # result.append(result[0])
     return result
 
 
-path_glouton = algo_glouton(7, original_path.copy())
+def shortest_glouton(path):
+    shortest_way = 10000
+    best_path = []
+    for i in range(0, len(all_points) - 1):
+        p = algo_glouton(i, path.copy())
+        if calc_boucle(p) < shortest_way:
+            shortest_way = calc_boucle(p)
+            best_path.insert(0, p)
+    return best_path[0]
+
+
+path_glouton = shortest_glouton(original_path.copy())
 print("Résultat Glouton :", path_glouton)
 total3 = calc_dist_total(path_glouton)
 print("La distance est égale à :", total3, "Km")
@@ -180,16 +207,8 @@ print("La distance est égale à :", total4, "Km")
 
 
 # Algo Génétique______________________________________________________________________
-def individu():
-    groupe = []
-    for i in range(0, len(all_points)):
-        groupe.append(algo_glouton(i, original_path.copy()))
-        # print(groupe[i])
-        # print(calc_dist_total(groupe[i]))
-    return groupe
-
-
-groupe_individu = individu()
+def swap(list, i, j):
+    list[i], list[j] = list[j], list[i]
 
 
 def tri_quick(list, first, last):
@@ -211,9 +230,16 @@ def partition(list, first, last):
     return mur
 
 
-# def best_parent(groupe):
-#     tri_quick(groupe, 0, len(groupe) - 1)
-#     return groupe
+def individu():
+    groupe = []
+    for i in range(0, len(all_points)):
+        groupe.append(algo_glouton(i, original_path.copy()))
+    tri_quick(groupe, 0, len(groupe) - 1)
+    return groupe
+
+
+groupe_individu = individu()
+
 
 def best_parent(groupe):
     parents = groupe
@@ -240,16 +266,10 @@ def worst_parent(groupe):
 def crossover(parent_a, parent_b):
     pivot = random.randint(len(parent_a) // 4, len(parent_a) * 3 // 4)
     fils = parent_a[0:pivot]
-    # print("genes du parent_a", fils)
     for i in range(len(parent_b)):
         if parent_b[i] not in fils:
             fils.append(parent_b[i])
-    # print("fils", fils, calc_dist_total(fils))
     return fils
-
-
-def swap(list, i, j):
-    list[i], list[j] = list[j], list[i]
 
 
 def mutation(fils):
@@ -264,20 +284,12 @@ def mutation(fils):
 def algo_genetic(groupe):
     new_generation = groupe
     parent_a = best_parent(new_generation)[0]
-    parent_b = best_parent(new_generation)[1]
-    # print("parent_a", parent_a, calc_dist_total(parent_a))
-    # print("parent_b", parent_b, calc_dist_total(parent_b))
+    parent_b = new_generation[random.randint(0, len(new_generation) - 1)]
     fils = crossover(parent_a, parent_b)
-    # if hasard > pourcentage:
     fils_mute = mutation(fils)
     fils_amelio = algo_opt(fils_mute)
-    # print("fils amélioré", fils_amelio, calc_dist_total(fils_amelio))
-    if calc_dist_total(fils_amelio) < calc_dist_total(parent_b):
-        # new_generation.pop(worst_parent(new_generation))
-        new_generation.append(fils_amelio)
-        # print(worst_parent(new_generation))
-        # print(new_generation)
-        # print(len(new_generation))
+    new_generation.append(fils_amelio)
+    new_generation.pop(worst_parent(new_generation))
     return new_generation
 
 
@@ -325,13 +337,14 @@ def path_coordinates(path):
     path_coords = []
     for i in range(0, len(path)):
         path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
+    # path_coords.append(path_coords[0])
     return path_coords
 
 
-# folium.PolyLine(path_coordinates(path), color="red", tooltip="shortest_path").add_to(m)
+# folium.PolyLine(path_coordinates(path_shortest), color="red", tooltip="shortest_path").add_to(m)
 # folium.PolyLine(path_coordinates(path2opt), color="blue", tooltip="2opt_path").add_to(m)
-# folium.PolyLine(path_coordinates(path_glouton), color="green", tooltip="glouton_path").add_to(m)
+folium.PolyLine(path_coordinates(path_glouton), color="green", tooltip="glouton_path").add_to(m)
 # folium.PolyLine(path_coordinates(path_glouton_2opt), color="red", tooltip="glouton_2opt_path").add_to(m)
-folium.PolyLine(path_coordinates(path_genetic), color="blue", tooltip="2opt_path").add_to(m)
+# folium.PolyLine(path_coordinates(path_genetic), color="blue", tooltip="genetic_path").add_to(m)
 
 m.save("index.html")
