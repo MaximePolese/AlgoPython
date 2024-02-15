@@ -315,7 +315,7 @@ def algo_genetic(groupe):
 def genetic():
     start_time = time.time()
     result = []
-    for i in range(len(all_points) * len(all_points)):
+    for i in range(len(all_points)):
         result = algo_genetic(algo_genetic(groupe_individu))
     best_result = best_parent(result)[0]
     print("\033[1;32mRésulat génétic :", best_result)
@@ -333,7 +333,14 @@ path_genetic = genetic()
 
 # Affichage___________________________________________________________________________
 def display_map(name, path):
-    m = folium.Map([45.18486504179179, 5.731181509376984], zoom_start=14)
+    path_coords = []
+    for i in range(0, len(path)):
+        path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
+    if len(path_coords) < 30:
+        zoom = 14
+    else:
+        zoom = 9
+    m = folium.Map([path_coords[0][0], path_coords[0][1]], zoom_start=zoom)
     folium.Marker(
         location=[45.18486504179179, 5.731181509376984],
         tooltip="Le Campus Numérique",
@@ -346,9 +353,6 @@ def display_map(name, path):
             tooltip=i,
             icon=folium.Icon(color="green", icon=""),
         ).add_to(m)
-    path_coords = []
-    for i in range(0, len(path)):
-        path_coords.append([all_points[path[i]][0], all_points[path[i]][1]])
     folium.PolyLine(path_coords, color="blue", tooltip="path").add_to(m)
     m.save(name)
 
