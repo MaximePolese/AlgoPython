@@ -303,7 +303,7 @@ def algo_genetic(groupe):
 def genetic():
     start_time = time.time()
     result = []
-    for i in range(len(all_points)):
+    for i in range(len(all_points) * len(all_points)):
         result = algo_genetic(algo_genetic(groupe_individu))
     best_result = best_parent(result)[0]
     print("\033[1;32mRésulat génétic :", best_result)
@@ -329,10 +329,10 @@ def format_path(path):
     return best_path
 
 
-best_path = format_path(path_genetic)
-print("Résultat génétic formaté :", best_path)
-total5 = calc_dist_total(best_path)
-print("La distance est égale à :", total5, "Km")
+# best_path = format_path(path_genetic)
+# print("Résultat génétic formaté :", best_path)
+# total5 = calc_dist_total(best_path)
+# print("La distance est égale à :", total5, "Km")
 
 
 # Algo Fourmis________________________________________________________________________
@@ -364,7 +364,8 @@ class AntColony:
             beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
         """
         self.distan = distan
-        self.pheromone = 1 / (len(distan) * random.uniform(0.5, 1))
+        self.pheromone_level = 1 / (len(distan) * random.uniform(0.5, 1))
+        self.pheromones = [] * len(distan) * len(distan)
         self.all_inds = range(len(distan))
         self.n_ants = n_ants
         self.n_best = n_best
@@ -382,14 +383,14 @@ class AntColony:
             shortest_path = min(all_paths, key=lambda x: x[1])
             if shortest_path[1] < all_time_shortest_path[1]:
                 all_time_shortest_path = shortest_path
-            self.pheromone * self.decay
+            self.pheromone_level *= self.decay
         return all_time_shortest_path
 
     def spread_pheronome(self, all_paths, n_best, shortest_path):
         sorted_paths = sorted(all_paths, key=lambda x: x[1])
         for path, dist in sorted_paths[:n_best]:
             for move in path:
-                self.pheromone += 1.0 / self.distan[move]
+                self.pheromone_level += 1.0 / self.distan[move]
 
     def gen_path_dist(self, path):
         total_dist = 0
@@ -400,7 +401,7 @@ class AntColony:
     def gen_all_paths(self):
         all_paths = []
         for i in range(self.n_ants):
-            path = self.gen_path(0)
+            path = self.gen_path(i)
             all_paths.append((path, self.gen_path_dist(path)))
         return all_paths
 
@@ -412,17 +413,17 @@ class AntColony:
         for i in range(len(self.distan) - 1):
             print(prev)
             print(self.distan[i])
-            move = self.pick_move(self.pheromone[prev], self.distan[prev], visited)
+            move = self.pick_move(self.pheromones[prev], self.distan[prev, :], visited)
             path.append((prev, move))
             prev = move
             visited.add(move)
         path.append((prev, start))  # going back to where we started
         return path
 
-    def pick_move(self, pheromone, dist, visited):
-        pheromone = list(pheromone)
+    def pick_move(self, pheromones, dist, visited):
+        pheromone = list(pheromones)
         dist = list(dist)
-        pheromone = [pheromone[i] ** self.alpha for i in range(len(pheromone))]
+        pheromone = [pheromones[i] ** self.alpha for i in range(len(pheromones))]
         dist = [(1.0 / dist[i]) ** self.beta for i in range(len(dist))]
         pheromone_total = sum(pheromone)
         dist_total = sum(dist)
@@ -454,9 +455,11 @@ class AntColony:
            alpha (int or float): exponenet on pheromone, higher alpha gives pheromone more weight. Default=1
            beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
        """
-fourmis = AntColony(dist1, len(all_points), len(all_points), len(all_points), 0.95)
-result = fourmis.run()
-print(result)
+
+
+# fourmis = AntColony(dist1, len(all_points), len(all_points), len(all_points), 0.95)
+# result = fourmis.run()
+# print(result)
 
 
 # Affichage___________________________________________________________________________
@@ -469,18 +472,20 @@ def display_map(name, path):
     else:
         zoom = 9
     est = 0
-    est_index = 0
-    ouest = 200
-    ouest_index = 0
+    ouest = 90
+    north = 90
+    south = 0
     for i in range(len(path_coords) - 1):
         if path_coords[i][1] < ouest:
             ouest = path_coords[i][1]
-            ouest_index = path_coords[i]
         if path_coords[i][1] > est:
             est = path_coords[i][1]
-            est_index = path_coords[i]
-    lon = (est_index[1] + ouest_index[1]) / 2
-    lat = (est_index[0] + ouest_index[0]) / 2
+        if path_coords[i][0] < north:
+            north = path_coords[i][0]
+        if path_coords[i][0] > south:
+            south = path_coords[i][0]
+    lat = (south + north) / 2
+    lon = (est + ouest) / 2
     m = folium.Map([lat, lon], zoom_start=zoom)
     folium.Marker(
         location=[45.18486504179179, 5.731181509376984],
@@ -502,4 +507,5 @@ display_map("map1.html", path_shortest)
 display_map("map2.html", path_2opt)
 display_map("map3.html", path_glouton)
 display_map("map4.html", path_glouton_2opt)
-display_map("map5.html", best_path)
+display_map("map5.html", path_genetic)
+# display_map("map5.html", best_path)
