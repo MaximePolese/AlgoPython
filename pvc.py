@@ -452,9 +452,10 @@ nombre_fourmis = 24
 nombre_iterations = 100
 evaporation_rate = 0.5
 
+
 # Exécution de l'algorithme
-result = algorithme_colonie_fourmis(villes, arêtes, nombre_fourmis, nombre_iterations, evaporation_rate)
-print(result)
+# result = algorithme_colonie_fourmis(villes, arêtes, nombre_fourmis, nombre_iterations, evaporation_rate)
+# print(result)
 
 
 # Affichage___________________________________________________________________________
