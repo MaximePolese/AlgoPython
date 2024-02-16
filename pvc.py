@@ -1,3 +1,4 @@
+import math
 import random
 import time
 
@@ -46,7 +47,7 @@ def loadFile():
     return all_points
 
 
-loadFile()
+# loadFile()
 
 
 def calc_distance_between_two_points(pointA, pointB, all_points):
@@ -336,130 +337,124 @@ def format_path(path):
 
 
 # Algo Fourmis________________________________________________________________________
-def calc_distances_numpy(all_points):
-    num_points = len(all_points)
-    distances = np.zeros((num_points, num_points))
-    for i in range(num_points):
-        for j in range(num_points):
-            if i != j:
-                distance = calc_distance_between_two_points(i, j, all_points)
-                distances[i][j] = distance
-                distances[j][i] = distance  # Since it's symmetric, fill both sides
-    return distances
+
+# Définition de la classe Ville
+class Ville:
+    def __init__(self, coordonnées):
+        self.coordonnées = coordonnées
 
 
-dist1 = calc_distances_numpy(all_points)
+# Définition de la classe Arête
+class Arête:
+    def __init__(self, ville_depart, ville_arrivée):
+        self.ville_depart = ville_depart
+        self.ville_arrivée = ville_arrivée
+        self.distance = self.calculer_distance()
+        self.pheromone = 1.0  # Initialisation de l'attribut phéromone
+
+    def calculer_distance(self):
+        coord_ville_depart = self.ville_depart.coordonnées
+        coord_ville_arrivée = self.ville_arrivée.coordonnées
+        return math.sqrt((coord_ville_arrivée[0] - coord_ville_depart[0]) ** 2 + (
+                coord_ville_arrivée[1] - coord_ville_depart[1]) ** 2)
 
 
-class AntColony:
-    def __init__(self, distan, n_ants, n_best, n_iterations, decay, alpha=1, beta=1):
-        """
-        Args:
-            distances (2D numpy.array): Square matrix of distances. Diagonal is assumed to be np.inf.
-            n_ants (int): Number of ants running per iteration
-            n_best (int): Number of best ants who deposit pheromone
-            n_iteration (int): Number of iterations
-            decay (float): Rate it which pheromone decays. The pheromone value is multiplied by decay, so 0.95 will lead to decay, 0.5 to much faster decay.
-            alpha (int or float): exponenet on pheromone, higher alpha gives pheromone more weight. Default=1
-            beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
-        """
-        self.distan = distan
-        self.pheromone_level = 1 / (len(distan) * random.uniform(0.5, 1))
-        self.pheromones = [] * len(distan) * len(distan)
-        self.all_inds = range(len(distan))
-        self.n_ants = n_ants
-        self.n_best = n_best
-        self.n_iterations = n_iterations
-        self.decay = decay
-        self.alpha = alpha
-        self.beta = beta
+# Définition de la classe Fourmi
+class Fourmi:
+    def __init__(self, ville_initiale, villes):
+        self.ville_initiale = ville_initiale
+        self.villes_restantes = villes.copy()
+        self.chemin = [ville_initiale]
+        self.distance_parcourue = 0
 
-    def run(self):
-        shortest_path = None
-        all_time_shortest_path = ("placeholder", float("inf"))
-        for i in range(self.n_iterations):
-            all_paths = self.gen_all_paths()
-            self.spread_pheronome(all_paths, self.n_best, shortest_path=shortest_path)
-            shortest_path = min(all_paths, key=lambda x: x[1])
-            if shortest_path[1] < all_time_shortest_path[1]:
-                all_time_shortest_path = shortest_path
-            self.pheromone_level *= self.decay
-        return all_time_shortest_path
+    def choisir_prochaine_ville(self, arêtes):
+        probabilités = []
+        somme_probabilités = 0
+        prochaine_ville = None  # Initialisation de la variable prochaine_ville
 
-    def spread_pheronome(self, all_paths, n_best, shortest_path):
-        sorted_paths = sorted(all_paths, key=lambda x: x[1])
-        for path, dist in sorted_paths[:n_best]:
-            for move in path:
-                self.pheromone_level += 1.0 / self.distan[move]
+        # Calculer la probabilité de choisir chaque ville voisine
+        for arête in arêtes:
+            if arête.ville_depart == self.chemin[-1] and arête.ville_arrivée in self.villes_restantes:
+                visibilité = 1 / arête.distance
+                probabilité = arête.pheromone * visibilité
+                probabilités.append((arête, probabilité))
+                somme_probabilités += probabilité
 
-    def gen_path_dist(self, path):
-        total_dist = 0
-        for ele in path:
-            total_dist += self.distan[ele]
-        return total_dist
+        # Sélectionner aléatoirement la prochaine ville en fonction des probabilités
+        choix = random.uniform(0, somme_probabilités)
+        somme = 0
+        for arête, probabilité in probabilités:
+            somme += probabilité
+            if somme >= choix:
+                prochaine_ville = arête.ville_arrivée
+                break
+        print(prochaine_ville)
+        return prochaine_ville
 
-    def gen_all_paths(self):
-        all_paths = []
-        for i in range(self.n_ants):
-            path = self.gen_path(i)
-            all_paths.append((path, self.gen_path_dist(path)))
-        return all_paths
-
-    def gen_path(self, start):
-        path = []
-        visited = set()
-        visited.add(start)
-        prev = start
-        for i in range(len(self.distan) - 1):
-            print(prev)
-            print(self.distan[i])
-            move = self.pick_move(self.pheromones[prev], self.distan[prev, :], visited)
-            path.append((prev, move))
-            prev = move
-            visited.add(move)
-        path.append((prev, start))  # going back to where we started
-        return path
-
-    def pick_move(self, pheromones, dist, visited):
-        pheromone = list(pheromones)
-        dist = list(dist)
-        pheromone = [pheromones[i] ** self.alpha for i in range(len(pheromones))]
-        dist = [(1.0 / dist[i]) ** self.beta for i in range(len(dist))]
-        pheromone_total = sum(pheromone)
-        dist_total = sum(dist)
-        move_probs = [0 for i in range(len(pheromone))]
-        for i in range(len(pheromone)):
-            move_probs[i] = (pheromone[i] / pheromone_total) * (dist[i] / dist_total)
-        move_probs = [i / sum(move_probs) for i in move_probs]
-        move = self.pick_weighted_random(move_probs, visited)
-        return move
-
-    def pick_weighted_random(self, weighted_list, visited):
-        sum_weights = sum(weighted_list)
-        if sum_weights <= 0:
-            return random.choice(list((set(range(len(weighted_list))) - visited)))
-        cum_weights = [0] + list(np.cumsum(weighted_list))
-        r = random.random() * sum_weights
-        for j in range(len(cum_weights)):
-            if cum_weights[j] > r:
-                return j - 1
+    def parcourir_villes(self, arêtes):
+        while self.villes_restantes:
+            prochaine_ville = self.choisir_prochaine_ville(arêtes)
+            if prochaine_ville:
+                self.villes_restantes.remove(prochaine_ville)
+                self.chemin.append(prochaine_ville)
+                for arête in arêtes:
+                    if arête.ville_depart == self.chemin[-2] and arête.ville_arrivée == prochaine_ville:
+                        self.distance_parcourue += arête.distance
+                        break
 
 
-"""
-       Args:
-           distances (2D numpy.array): Square matrix of distances. Diagonal is assumed to be np.inf.
-           n_ants (int): Number of ants running per iteration
-           n_best (int): Number of best ants who deposit pheromone
-           n_iteration (int): Number of iterations
-           decay (float): Rate it which pheromone decays. The pheromone value is multiplied by decay, so 0.95 will lead to decay, 0.5 to much faster decay.
-           alpha (int or float): exponenet on pheromone, higher alpha gives pheromone more weight. Default=1
-           beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
-       """
+# Fonction pour mettre à jour les niveaux de phéromones sur les arêtes
+def mettre_à_jour_pheromones(arêtes, fourmis, evaporation_rate):
+    for arête in arêtes:
+        arête.pheromone *= (1 - evaporation_rate)  # Évaporation des phéromones
+    for fourmi in fourmis:
+        for i in range(len(fourmi.chemin) - 1):
+            ville_depart = fourmi.chemin[i]
+            ville_arrivée = fourmi.chemin[i + 1]
+            for arête in arêtes:
+                if arête.ville_depart == ville_depart and arête.ville_arrivée == ville_arrivée:
+                    arête.pheromone += 1 / fourmi.distance_parcourue  # Dépôt de phéromones proportionnel à la longueur du chemin parcouru
 
 
-# fourmis = AntColony(dist1, len(all_points), len(all_points), len(all_points), 0.95)
-# result = fourmis.run()
-# print(result)
+# Fonction principale de l'algorithme de la colonie de fourmis
+def algorithme_colonie_fourmis(villes, arêtes, nombre_fourmis, nombre_iterations, evaporation_rate):
+    meilleure_distance = float('inf')
+    meilleur_chemin = None
+
+    for _ in range(nombre_iterations):
+        fourmis = [Fourmi(villes[0], villes[1:]) for _ in range(nombre_fourmis)]
+
+        # Parcours des villes par chaque fourmi
+        for fourmi in fourmis:
+            fourmi.parcourir_villes(arêtes)
+
+            # Mise à jour de la meilleure distance et du meilleur chemin trouvé
+            if fourmi.distance_parcourue < meilleure_distance:
+                meilleure_distance = fourmi.distance_parcourue
+                meilleur_chemin = fourmi.chemin
+
+        # Mise à jour des niveaux de phéromones sur les arêtes
+        mettre_à_jour_pheromones(arêtes, fourmis, evaporation_rate)
+
+    return meilleur_chemin, meilleure_distance
+
+
+villes = [Ville(coordonnées) for coordonnées in all_points]
+
+# Création des arêtes entre les villes
+arêtes = []
+for i in range(len(villes)):
+    for j in range(i + 1, len(villes)):
+        arêtes.append(Arête(villes[i], villes[j]))
+
+# Paramètres de l'algorithme
+nombre_fourmis = 24
+nombre_iterations = 100
+evaporation_rate = 0.5
+
+# Exécution de l'algorithme
+result = algorithme_colonie_fourmis(villes, arêtes, nombre_fourmis, nombre_iterations, evaporation_rate)
+print(result)
 
 
 # Affichage___________________________________________________________________________
@@ -509,3 +504,4 @@ display_map("map3.html", path_glouton)
 display_map("map4.html", path_glouton_2opt)
 display_map("map5.html", path_genetic)
 # display_map("map5.html", best_path)
+display_map("map6.html", result)
