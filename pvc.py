@@ -4,6 +4,7 @@ import time
 import haversine as hs
 import folium
 import csv
+import numpy as np
 
 all_points = [
     [45.171112, 5.695952],
@@ -45,7 +46,7 @@ def loadFile():
     return all_points
 
 
-# loadFile()
+loadFile()
 
 
 def calc_distance_between_two_points(pointA, pointB, all_points):
@@ -196,22 +197,6 @@ def shortest_glouton(path):
     return best_path[0]
 
 
-# def format_path(path):
-#     max = 0
-#     index_max = 0
-#     for i in range(0, len(path) - 1):
-#         if distances[path[i]][path[i + 1]] > max:
-#             max = distances[path[i]][path[i + 1]]
-#             index_max = i + 1
-#     path.pop(-1)
-#     best_path = path[index_max:]
-#     best_path.extend(path[:index_max])
-#     print(best_path)
-#     print(len(best_path))
-#     return best_path
-
-
-# path_glouton = format_path(shortest_glouton(original_path.copy()))
 path_glouton = shortest_glouton(original_path.copy())
 print("Résultat Glouton :", path_glouton)
 total3 = calc_boucle(path_glouton)
@@ -305,7 +290,10 @@ def algo_genetic(groupe):
     parent_a = best_parent(new_generation)[0]
     parent_b = new_generation[random.randint(0, len(new_generation) - 1)]
     fils = crossover(parent_a, parent_b)
-    fils_mute = mutation(fils)
+    if random.randint(0, 100) > 20:
+        fils_mute = mutation(fils)
+    else:
+        fils_mute = fils
     fils_amelio = algo_opt(fils_mute)
     new_generation.append(fils_amelio)
     new_generation.pop(worst_parent(new_generation))
@@ -328,7 +316,147 @@ def genetic():
 path_genetic = genetic()
 
 
+def format_path(path):
+    max = 0
+    index_max = 0
+    for i in range(0, len(path) - 1):
+        if distances[path[i]][path[i + 1]] > max:
+            max = distances[path[i]][path[i + 1]]
+            index_max = i + 1
+    path.pop(-1)
+    best_path = path[index_max:]
+    best_path.extend(path[:index_max])
+    return best_path
+
+
+best_path = format_path(path_genetic)
+print("Résultat génétic formaté :", best_path)
+total5 = calc_dist_total(best_path)
+print("La distance est égale à :", total5, "Km")
+
+
 # Algo Fourmis________________________________________________________________________
+def calc_distances_numpy(all_points):
+    num_points = len(all_points)
+    distances = np.zeros((num_points, num_points))
+    for i in range(num_points):
+        for j in range(num_points):
+            if i != j:
+                distance = calc_distance_between_two_points(i, j, all_points)
+                distances[i][j] = distance
+                distances[j][i] = distance  # Since it's symmetric, fill both sides
+    return distances
+
+
+dist1 = calc_distances_numpy(all_points)
+
+
+class AntColony:
+    def __init__(self, distan, n_ants, n_best, n_iterations, decay, alpha=1, beta=1):
+        """
+        Args:
+            distances (2D numpy.array): Square matrix of distances. Diagonal is assumed to be np.inf.
+            n_ants (int): Number of ants running per iteration
+            n_best (int): Number of best ants who deposit pheromone
+            n_iteration (int): Number of iterations
+            decay (float): Rate it which pheromone decays. The pheromone value is multiplied by decay, so 0.95 will lead to decay, 0.5 to much faster decay.
+            alpha (int or float): exponenet on pheromone, higher alpha gives pheromone more weight. Default=1
+            beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
+        """
+        self.distan = distan
+        self.pheromone = 1 / (len(distan) * random.uniform(0.5, 1))
+        self.all_inds = range(len(distan))
+        self.n_ants = n_ants
+        self.n_best = n_best
+        self.n_iterations = n_iterations
+        self.decay = decay
+        self.alpha = alpha
+        self.beta = beta
+
+    def run(self):
+        shortest_path = None
+        all_time_shortest_path = ("placeholder", float("inf"))
+        for i in range(self.n_iterations):
+            all_paths = self.gen_all_paths()
+            self.spread_pheronome(all_paths, self.n_best, shortest_path=shortest_path)
+            shortest_path = min(all_paths, key=lambda x: x[1])
+            if shortest_path[1] < all_time_shortest_path[1]:
+                all_time_shortest_path = shortest_path
+            self.pheromone * self.decay
+        return all_time_shortest_path
+
+    def spread_pheronome(self, all_paths, n_best, shortest_path):
+        sorted_paths = sorted(all_paths, key=lambda x: x[1])
+        for path, dist in sorted_paths[:n_best]:
+            for move in path:
+                self.pheromone += 1.0 / self.distan[move]
+
+    def gen_path_dist(self, path):
+        total_dist = 0
+        for ele in path:
+            total_dist += self.distan[ele]
+        return total_dist
+
+    def gen_all_paths(self):
+        all_paths = []
+        for i in range(self.n_ants):
+            path = self.gen_path(0)
+            all_paths.append((path, self.gen_path_dist(path)))
+        return all_paths
+
+    def gen_path(self, start):
+        path = []
+        visited = set()
+        visited.add(start)
+        prev = start
+        for i in range(len(self.distan) - 1):
+            print(prev)
+            print(self.distan[i])
+            move = self.pick_move(self.pheromone[prev], self.distan[prev], visited)
+            path.append((prev, move))
+            prev = move
+            visited.add(move)
+        path.append((prev, start))  # going back to where we started
+        return path
+
+    def pick_move(self, pheromone, dist, visited):
+        pheromone = list(pheromone)
+        dist = list(dist)
+        pheromone = [pheromone[i] ** self.alpha for i in range(len(pheromone))]
+        dist = [(1.0 / dist[i]) ** self.beta for i in range(len(dist))]
+        pheromone_total = sum(pheromone)
+        dist_total = sum(dist)
+        move_probs = [0 for i in range(len(pheromone))]
+        for i in range(len(pheromone)):
+            move_probs[i] = (pheromone[i] / pheromone_total) * (dist[i] / dist_total)
+        move_probs = [i / sum(move_probs) for i in move_probs]
+        move = self.pick_weighted_random(move_probs, visited)
+        return move
+
+    def pick_weighted_random(self, weighted_list, visited):
+        sum_weights = sum(weighted_list)
+        if sum_weights <= 0:
+            return random.choice(list((set(range(len(weighted_list))) - visited)))
+        cum_weights = [0] + list(np.cumsum(weighted_list))
+        r = random.random() * sum_weights
+        for j in range(len(cum_weights)):
+            if cum_weights[j] > r:
+                return j - 1
+
+
+"""
+       Args:
+           distances (2D numpy.array): Square matrix of distances. Diagonal is assumed to be np.inf.
+           n_ants (int): Number of ants running per iteration
+           n_best (int): Number of best ants who deposit pheromone
+           n_iteration (int): Number of iterations
+           decay (float): Rate it which pheromone decays. The pheromone value is multiplied by decay, so 0.95 will lead to decay, 0.5 to much faster decay.
+           alpha (int or float): exponenet on pheromone, higher alpha gives pheromone more weight. Default=1
+           beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
+       """
+fourmis = AntColony(dist1, len(all_points), len(all_points), len(all_points), 0.95)
+result = fourmis.run()
+print(result)
 
 
 # Affichage___________________________________________________________________________
@@ -340,7 +468,20 @@ def display_map(name, path):
         zoom = 14
     else:
         zoom = 9
-    m = folium.Map([path_coords[0][0], path_coords[0][1]], zoom_start=zoom)
+    est = 0
+    est_index = 0
+    ouest = 200
+    ouest_index = 0
+    for i in range(len(path_coords) - 1):
+        if path_coords[i][1] < ouest:
+            ouest = path_coords[i][1]
+            ouest_index = path_coords[i]
+        if path_coords[i][1] > est:
+            est = path_coords[i][1]
+            est_index = path_coords[i]
+    lon = (est_index[1] + ouest_index[1]) / 2
+    lat = (est_index[0] + ouest_index[0]) / 2
+    m = folium.Map([lat, lon], zoom_start=zoom)
     folium.Marker(
         location=[45.18486504179179, 5.731181509376984],
         tooltip="Le Campus Numérique",
@@ -361,4 +502,4 @@ display_map("map1.html", path_shortest)
 display_map("map2.html", path_2opt)
 display_map("map3.html", path_glouton)
 display_map("map4.html", path_glouton_2opt)
-display_map("map5.html", path_genetic)
+display_map("map5.html", best_path)
